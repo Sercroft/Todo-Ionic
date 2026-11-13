@@ -11,6 +11,7 @@ import {
   ModalController,
 } from '@ionic/angular';
 
+import { FeatureFlagsService } from '../../../../../core/feature-flags/feature-flags.service';
 import { Category } from '../../../../categories/domain/category.model';
 import { CategoriesManagePage } from '../../../../categories/presentation/pages/categories-manage/categories-manage.page';
 import { CategoriesViewModel } from '../../../../categories/presentation/view-models/categories.viewmodel';
@@ -30,9 +31,11 @@ import { TasksViewModel, TaskStatusFilter } from '../../view-models/tasks.viewmo
             <p class="subtitle">Organiza tus pendientes a tu manera.</p>
           </div>
 
-          <ion-button fill="outline" size="small" class="categories-button" (click)="openCategoriesModal()">
-            Gestionar categorías
-          </ion-button>
+          @if (featureFlags.categoriesEnabled()) {
+            <ion-button fill="outline" size="small" class="categories-button" (click)="openCategoriesModal()">
+              Gestionar categorías
+            </ion-button>
+          }
         </header>
 
         <!-- Stats -->
@@ -82,22 +85,24 @@ import { TasksViewModel, TaskStatusFilter } from '../../view-models/tasks.viewmo
             rows="3"
           ></ion-textarea>
 
-          <ion-select
-            label="Categoría"
-            labelPlacement="floating"
-            fill="outline"
-            placeholder="Selecciona una categoría"
-            interface="popover"
-            [(ngModel)]="selectedCategoryId"
-          >
-            <ion-select-option [value]="null"> Sin categoría </ion-select-option>
+          @if (featureFlags.categoriesEnabled()) {
+            <ion-select
+              label="Categoría"
+              labelPlacement="floating"
+              fill="outline"
+              placeholder="Selecciona una categoría"
+              interface="popover"
+              [(ngModel)]="selectedCategoryId"
+            >
+              <ion-select-option [value]="null"> Sin categoría </ion-select-option>
 
-            @for (category of categoriesViewModel.categories(); track category.id) {
-              <ion-select-option [value]="category.id">
-                {{ category.name }}
-              </ion-select-option>
-            }
-          </ion-select>
+              @for (category of categoriesViewModel.categories(); track category.id) {
+                <ion-select-option [value]="category.id">
+                  {{ category.name }}
+                </ion-select-option>
+              }
+            </ion-select>
+          }
 
           <div class="form-actions">
             <ion-button expand="block" (click)="saveTask()" [disabled]="!newTaskTitle.trim()">
@@ -143,23 +148,25 @@ import { TasksViewModel, TaskStatusFilter } from '../../view-models/tasks.viewmo
             </button>
           </div>
 
-          <ion-select
-            class="category-filter"
-            label="Filtrar por categoría"
-            labelPlacement="floating"
-            fill="outline"
-            interface="popover"
-            [(ngModel)]="selectedCategoryFilterId"
-            (ionChange)="applyCategoryFilter()"
-          >
-            <ion-select-option [value]="null"> Todas las categorías </ion-select-option>
+          @if (featureFlags.categoriesEnabled()) {
+            <ion-select
+              class="category-filter"
+              label="Filtrar por categoría"
+              labelPlacement="floating"
+              fill="outline"
+              interface="popover"
+              [(ngModel)]="selectedCategoryFilterId"
+              (ionChange)="applyCategoryFilter()"
+            >
+              <ion-select-option [value]="null"> Todas las categorías </ion-select-option>
 
-            @for (category of categoriesViewModel.categories(); track category.id) {
-              <ion-select-option [value]="category.id">
-                {{ category.name }}
-              </ion-select-option>
-            }
-          </ion-select>
+              @for (category of categoriesViewModel.categories(); track category.id) {
+                <ion-select-option [value]="category.id">
+                  {{ category.name }}
+                </ion-select-option>
+              }
+            </ion-select>
+          }
         </section>
 
         <!-- Tasks -->
@@ -186,15 +193,17 @@ import { TasksViewModel, TaskStatusFilter } from '../../view-models/tasks.viewmo
                         {{ task.completed ? 'Completada' : 'Pendiente' }}
                       </span>
 
-                      @if (getCategory(task.categoryId); as category) {
-                        <span
-                          class="category-pill"
-                          [style.background-color]="category.color + '22'"
-                          [style.color]="category.color"
-                          [style.border-color]="category.color"
-                        >
-                          {{ category.name }}
-                        </span>
+                      @if (featureFlags.categoriesEnabled()) {
+                        @if (getCategory(task.categoryId); as category) {
+                          <span
+                            class="category-pill"
+                            [style.background-color]="category.color + '22'"
+                            [style.color]="category.color"
+                            [style.border-color]="category.color"
+                          >
+                            {{ category.name }}
+                          </span>
+                        }
                       }
                     </div>
                   </div>
@@ -513,10 +522,10 @@ import { TasksViewModel, TaskStatusFilter } from '../../view-models/tasks.viewmo
   ],
   imports: [IonContent, IonInput, IonTextarea, IonButton, IonCheckbox, IonSelect, IonSelectOption, FormsModule],
 })
-
 export class TasksListPage implements OnInit {
   readonly viewModel = inject(TasksViewModel);
   readonly categoriesViewModel = inject(CategoriesViewModel);
+  readonly featureFlags = inject(FeatureFlagsService);
 
   private readonly modalController = inject(ModalController);
 
@@ -530,6 +539,7 @@ export class TasksListPage implements OnInit {
   ngOnInit(): void {
     void this.viewModel.loadTasks();
     void this.categoriesViewModel.loadCategories();
+    void this.featureFlags.load();
   }
 
   async openCategoriesModal(): Promise<void> {

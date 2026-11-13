@@ -47,6 +47,7 @@
     "angular-eslint": "22.6.0",
     "cordova-android": "^15.1.0",
     "cordova-plugin-device": "2.0.2",
+    "cordova-plugin-firebasex-config": "^2.0.2",
     "cordova-plugin-ionic-keyboard": "^2.0.5",
     "cordova-plugin-ionic-webview": "^5.0.0",
     "cordova-plugin-splashscreen": "5.0.2",
@@ -70,7 +71,10 @@
       "cordova-plugin-device": {},
       "cordova-plugin-splashscreen": {},
       "cordova-plugin-ionic-webview": {},
-      "cordova-plugin-ionic-keyboard": {}
+      "cordova-plugin-ionic-keyboard": {},
+      "cordova-plugin-firebasex-config": {
+        "ANDROID_FIREBASE_CONFIG_VERSION": "23.1.0"
+      }
     },
     "platforms": [
       "android"
