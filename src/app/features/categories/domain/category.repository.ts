@@ -1,4 +1,3 @@
-
 import type { Category, CreateCategoryDto } from './category.model';
 
 export abstract class CategoryRepository {

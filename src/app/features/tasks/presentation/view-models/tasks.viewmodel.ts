@@ -1,16 +1,13 @@
-
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import type { CreateTaskDto, Task } from '../../domain/task.model';
-import { TaskRepository } from '../../domain/task.repository';
+import { TasksFacade } from '../facades/tasks.facade';
 
 export type TaskStatusFilter = 'all' | 'pending' | 'completed';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class TasksViewModel {
-  private readonly taskRepository = inject(TaskRepository);
+  private readonly tasksFacade = inject(TasksFacade);
 
   readonly tasks = signal<Task[]>([]);
   readonly isLoading = signal(false);
@@ -20,14 +17,11 @@ export class TasksViewModel {
 
   readonly filteredTasks = computed(() => {
     let result = this.tasks();
-
     const categoryId = this.selectedCategoryId();
     const status = this.statusFilter();
 
     if (categoryId !== null) {
-      result = result.filter(
-        (task) => task.categoryId === categoryId
-      );
+      result = result.filter((task) => task.categoryId === categoryId);
     }
 
     if (status === 'pending') {
@@ -43,7 +37,6 @@ export class TasksViewModel {
 
   readonly stats = computed(() => {
     const tasks = this.tasks();
-
     const completed = tasks.filter((task) => task.completed).length;
 
     return {
@@ -58,7 +51,7 @@ export class TasksViewModel {
     this.error.set(null);
 
     try {
-      const tasks = await this.taskRepository.getAll();
+      const tasks = await this.tasksFacade.getAll();
       this.tasks.set(tasks);
     } catch {
       this.error.set('No fue posible cargar las tareas.');
@@ -69,7 +62,7 @@ export class TasksViewModel {
 
   async addTask(dto: CreateTaskDto): Promise<void> {
     try {
-      const newTask = await this.taskRepository.create(dto);
+      const newTask = await this.tasksFacade.create(dto);
       this.tasks.update((tasks) => [...tasks, newTask]);
       this.error.set(null);
     } catch {
@@ -80,13 +73,9 @@ export class TasksViewModel {
 
   async updateTask(task: Task): Promise<void> {
     try {
-      const updatedTask = await this.taskRepository.update(task);
+      const updatedTask = await this.tasksFacade.update(task);
 
-      this.tasks.update((tasks) =>
-        tasks.map((current) =>
-          current.id === updatedTask.id ? updatedTask : current
-        )
-      );
+      this.tasks.update((tasks) => tasks.map((current) => (current.id === updatedTask.id ? updatedTask : current)));
 
       this.error.set(null);
     } catch {
@@ -95,22 +84,23 @@ export class TasksViewModel {
     }
   }
 
-  // Change status of a task (toggle completed)
   async toggleTask(task: Task): Promise<void> {
-    await this.updateTask({
-      ...task,
-      completed: !task.completed,
-    });
+    try {
+      const updatedTask = await this.tasksFacade.toggleCompletion(task);
+
+      this.tasks.update((tasks) => tasks.map((current) => (current.id === updatedTask.id ? updatedTask : current)));
+
+      this.error.set(null);
+    } catch {
+      this.error.set('No fue posible actualizar la tarea.');
+      throw new Error('Task update failed');
+    }
   }
 
   async deleteTask(id: string): Promise<void> {
     try {
-      await this.taskRepository.delete(id);
-
-      this.tasks.update((tasks) =>
-        tasks.filter((task) => task.id !== id)
-      );
-
+      await this.tasksFacade.delete(id);
+      this.tasks.update((tasks) => tasks.filter((task) => task.id !== id));
       this.error.set(null);
     } catch {
       this.error.set('No fue posible eliminar la tarea.');
@@ -118,7 +108,6 @@ export class TasksViewModel {
     }
   }
 
-  // Filters
   setCategoryFilter(categoryId: string | null): void {
     this.selectedCategoryId.set(categoryId);
   }
